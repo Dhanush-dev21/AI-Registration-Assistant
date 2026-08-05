@@ -334,7 +334,7 @@ def handle_check_registration(user_input):
             "registration ID, for example REG0005."
         )
 
-        return
+        return False
 
     registration = find_registration(
         registration_id
@@ -352,6 +352,8 @@ def handle_check_registration(user_input):
             f"Assistant: No registration found "
             f"with ID {registration_id}."
         )
+
+    return True
 
 
 # ==========================================
@@ -412,9 +414,24 @@ while True:
 
         if intent == "check_registration":
 
-            handle_check_registration(
+            registration_id = extract_registration_id(
                 user_input
             )
+
+            if registration_id:
+
+                handle_check_registration(
+                    user_input
+                )
+
+            else:
+
+                print(
+                    "Assistant: Please provide your "
+                    "registration ID, for example REG0005."
+                )
+
+                conversation_state = "registration_id"
 
 
         # ==================================
@@ -483,6 +500,45 @@ while True:
                 "Assistant: I'm not sure I "
                 "understood. Could you please "
                 "rephrase your question?"
+            )
+
+
+    # ======================================
+    # REGISTRATION ID STATE
+    # ======================================
+
+    elif conversation_state == "registration_id":
+
+        registration_id = extract_registration_id(
+            user_input
+        )
+
+        if registration_id:
+
+            registration = find_registration(
+                registration_id
+            )
+
+            if registration:
+
+                show_registration(
+                    registration
+                )
+
+            else:
+
+                print(
+                    f"Assistant: No registration found "
+                    f"with ID {registration_id}."
+                )
+
+            conversation_state = "start"
+
+        else:
+
+            print(
+                "Assistant: Please enter a valid "
+                "registration ID such as REG0005."
             )
 
 
@@ -762,9 +818,24 @@ while True:
 
         if intent == "check_registration":
 
-            handle_check_registration(
+            registration_id = extract_registration_id(
                 user_input
             )
+
+            if registration_id:
+
+                handle_check_registration(
+                    user_input
+                )
+
+            else:
+
+                print(
+                    "Assistant: Please provide your "
+                    "registration ID, for example REG0005."
+                )
+
+                conversation_state = "registration_id"
 
 
         # ==================================
