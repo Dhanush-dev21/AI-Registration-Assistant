@@ -1,0 +1,29 @@
+[
+    {
+        "name": "dhanush",
+        "email": "dhanush@gmail.com",
+        "field": "computer science",
+        "experience": "beginner"
+    },
+    {
+        "registration_id": "REG0002",
+        "name": "dhanush",
+        "email": "dhanush@gmail.com",
+        "field": "computer science",
+        "experience": "beginner"
+    },
+    {
+        "registration_id": "REG0003",
+        "name": "dhanush",
+        "email": "dhanush@gmail.com",
+        "field": "computer science",
+        "experience": "beginner"
+    },
+    {
+        "registration_id": "REG0004",
+        "name": "dhanush",
+        "email": "dhanush@gmail.com",
+        "field": "computer science",
+        "experience": "beginner"
+    }
+]
