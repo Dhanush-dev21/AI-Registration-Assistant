@@ -1,7 +1,6 @@
 import sqlite3
 import os
 
-
 # ==========================================
 # DATABASE PATH
 # ==========================================
@@ -89,3 +88,26 @@ def find_registration(registration_id):
         }
 
     return None
+
+
+# ==========================================
+# CHECK IF EMAIL ALREADY EXISTS
+# ==========================================
+
+def email_exists(email):
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT 1
+    FROM registrations
+    WHERE LOWER(email) = LOWER(?)
+    LIMIT 1
+    """, (email,))
+
+    result = cursor.fetchone()
+
+    conn.close()
+
+    return result is not None

@@ -9,7 +9,8 @@ from intent_model import predict_intent
 from database import (
     initialize_database,
     save_to_database,
-    find_registration
+    find_registration,
+     email_exists
 )
 
 
@@ -384,6 +385,32 @@ while True:
 
     user_input = input("You: ").strip()
 
+ # ======================================
+    # CANCEL REGISTRATION
+    # ======================================
+
+    if user_input.lower() == "cancel":
+
+        conversation_state = "start"
+
+        user_data = {
+            "registration_id": "",
+            "name": "",
+            "email": "",
+            "field": "",
+            "experience": ""
+        }
+
+        print(
+            "Assistant: Registration cancelled."
+        )
+
+        print(
+            "Assistant: You can type 'I want to register' anytime to start again."
+        )
+
+        continue
+
 
     # ======================================
     # EXIT
@@ -640,8 +667,19 @@ while True:
 
         if email and is_valid_email(email):
 
-            user_data["email"] = email
+            if email_exists(email):
 
+                print(
+                    "Assistant: This email is already registered."
+                )
+
+                print(
+                    "Assistant: Please use a different email address."
+                )
+
+                continue
+
+            user_data["email"] = email
             print(
                 f"Assistant: Thank you! Your email "
                 f"{email} has been recorded."
@@ -858,4 +896,3 @@ while True:
                 "Assistant: Type something like "
                 "'check REG0005' or type 'exit'."
             )
-
