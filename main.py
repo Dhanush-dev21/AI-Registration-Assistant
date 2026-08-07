@@ -410,6 +410,31 @@ while True:
         )
 
         continue
+# ======================================
+# RESTART REGISTRATION
+# ======================================
+
+    if user_input.lower() == "restart":
+
+        conversation_state = "name"
+
+        user_data = {
+            "registration_id": "",
+            "name": "",
+            "email": "",
+            "field": "",
+            "experience": ""
+        }
+
+        print(
+            "Assistant: Registration restarted."
+        )
+
+        print(
+            "Assistant: Please provide your full name."
+        )
+
+        continue
 
 
     # ======================================
@@ -500,9 +525,47 @@ while True:
         elif intent == "help":
 
             print(
-                "Assistant: I can help you with "
-                "internship registration and "
-                "registration status."
+                "Assistant: I can help you with the following:"
+            )
+
+            print(
+                "\n1. Register for an internship"
+            )
+
+            print(
+                "2. Check your registration details"
+            )
+
+            print(
+                "3. Cancel registration"
+            )
+
+            print(
+                "4. Restart registration"
+            )
+
+            print(
+                "\nAvailable commands:"
+            )
+
+            print(
+                "• I want to register"
+            )
+
+            print(
+                "• Show my registration details"
+            )
+
+            print(
+                "• Cancel"
+            )
+
+            print(
+                "• Restart"
+            )
+
+            print(
+                "• Exit"
             )
 
 
