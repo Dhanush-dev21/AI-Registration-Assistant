@@ -1,18 +1,16 @@
 import re
 import sqlite3
 
-from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
-
-from intent_model import predict_intent
+from nltk.tokenize import word_tokenize
 
 from database import (
+    email_exists,
+    find_registration,
     initialize_database,
     save_to_database,
-    find_registration,
-     email_exists
 )
-
+from intent_model import predict_intent
 
 # ==========================================
 # INITIALIZE DATABASE
@@ -22,49 +20,57 @@ initialize_database()
 
 
 # ==========================================
-# NLTK NLP PREPROCESSING
+# NLTK
 # ==========================================
 
 lemmatizer = WordNetLemmatizer()
 
 
 def preprocess_text(text):
-
+    """Convert text to lowercase, tokenize, and lemmatize."""
     text = text.lower()
-
     tokens = word_tokenize(text)
 
-    lemmas = [
-        lemmatizer.lemmatize(token)
-        for token in tokens
-    ]
-
-    return lemmas
+    return [lemmatizer.lemmatize(token) for token in tokens]
 
 
 # ==========================================
-# STUDENT REGISTRATION DATA
+# USER DATA
 # ==========================================
 
-user_data = {
+userdata = {
     "registration_id": "",
     "name": "",
     "email": "",
     "field": "",
-    "experience": ""
+    "experience": "",
 }
+
+
+# ==========================================
+# RESET USER DATA
+# ==========================================
+
+
+def reset_userdata():
+    global userdata
+
+    userdata = {
+        "registration_id": "",
+        "name": "",
+        "email": "",
+        "field": "",
+        "experience": "",
+    }
 
 
 # ==========================================
 # GENERATE REGISTRATION ID
 # ==========================================
 
+
 def generate_registration_id():
-
-    conn = sqlite3.connect(
-        "data/registrations.db"
-    )
-
+    conn = sqlite3.connect("data/registrations.db")
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -75,24 +81,16 @@ def generate_registration_id():
             SUBSTR(registration_id, 4) AS INTEGER
         ) DESC
         LIMIT 1
-    """)
+        """)
 
     result = cursor.fetchone()
-
     conn.close()
 
     if result:
-
         last_id = result[0]
-
-        number = int(
-            last_id.replace("REG", "")
-        )
-
+        number = int(last_id.replace("REG", ""))
         next_number = number + 1
-
     else:
-
         next_number = 1
 
     return f"REG{next_number:04d}"
@@ -102,25 +100,21 @@ def generate_registration_id():
 # EXTRACT NAME
 # ==========================================
 
+
 def extract_name(user_input):
-
     patterns = [
-
         r"(?:my name is|i am|i'm)\s+([a-zA-Z ]+)",
-
-        r"(?:name is)\s+([a-zA-Z ]+)"
+        r"(?:name is)\s+([a-zA-Z ]+)",
     ]
 
     for pattern in patterns:
-
         match = re.search(
             pattern,
             user_input,
-            re.IGNORECASE
+            re.IGNORECASE,
         )
 
         if match:
-
             return match.group(1).strip()
 
     return None
@@ -130,21 +124,13 @@ def extract_name(user_input):
 # EXTRACT EMAIL
 # ==========================================
 
+
 def extract_email(user_input):
+    pattern = r"[a-zA-Z0-9.%+-]+" r"@[a-zA-Z0-9.-]+" r"\.[a-zA-Z]{2,}"
 
-    pattern = (
-        r"[a-zA-Z0-9._%+-]+"
-        r"@[a-zA-Z0-9.-]+"
-        r"\.[a-zA-Z]{2,}"
-    )
-
-    match = re.search(
-        pattern,
-        user_input
-    )
+    match = re.search(pattern, user_input)
 
     if match:
-
         return match.group()
 
     return None
@@ -154,42 +140,31 @@ def extract_email(user_input):
 # VALIDATE EMAIL
 # ==========================================
 
+
 def is_valid_email(email):
+    pattern = r"^[a-zA-Z0-9.%+-]+" r"@[a-zA-Z0-9.-]+" r"\.[a-zA-Z]{2,}$"
 
-    pattern = (
-        r"^[a-zA-Z0-9._%+-]+"
-        r"@[a-zA-Z0-9.-]+"
-        r"\.[a-zA-Z]{2,}$"
-    )
-
-    return re.match(
-        pattern,
-        email
-    ) is not None
+    return re.match(pattern, email) is not None
 
 
 # ==========================================
-# EXTRACT FIELD OF STUDY
+# EXTRACT FIELD
 # ==========================================
+
 
 def extract_field(user_input):
-
     patterns = [
-
-        r"(?:i study|i'm studying|i am studying|"
-        r"my field is|field is)\s+(.+)"
+        r"(?:i study|i'm studying|i am studying|" r"my field is|field is)\s+(.+)"
     ]
 
     for pattern in patterns:
-
         match = re.search(
             pattern,
             user_input,
-            re.IGNORECASE
+            re.IGNORECASE,
         )
 
         if match:
-
             return match.group(1).strip()
 
     return None
@@ -199,28 +174,22 @@ def extract_field(user_input):
 # EXTRACT EXPERIENCE
 # ==========================================
 
+
 def extract_experience(user_input):
-
     patterns = [
-
-        r"(?:i am a|i'm a|i am|i'm)\s+"
-        r"(beginner|intermediate|advanced|expert)",
-
+        r"(?:i am a|i'm a|i am|i'm)\s+" r"(beginner|intermediate|advanced|expert)",
         r"(?:my experience is|experience level is)\s+(.+)",
-
-        r"(?:i have)\s+(.+?)\s+(?:experience)"
+        r"(?:i have)\s+(.+?)\s+(?:experience)",
     ]
 
     for pattern in patterns:
-
         match = re.search(
             pattern,
             user_input,
-            re.IGNORECASE
+            re.IGNORECASE,
         )
 
         if match:
-
             return match.group(1).strip()
 
     return None
@@ -230,17 +199,16 @@ def extract_experience(user_input):
 # EXTRACT REGISTRATION ID
 # ==========================================
 
-def extract_registration_id(user_input):
 
+def extract_registration_id(user_input):
     pattern = r"\bREG\d{4}\b"
 
     match = re.search(
         pattern,
-        user_input.upper()
+        user_input.upper(),
     )
 
     if match:
-
         return match.group()
 
     return None
@@ -250,70 +218,46 @@ def extract_registration_id(user_input):
 # DISPLAY REGISTRATION SUMMARY
 # ==========================================
 
-def show_summary():
 
+def show_summary():
     print("\n======================================")
     print("       REGISTRATION SUMMARY")
     print("======================================")
 
-    print(
-        f"Registration ID: "
-        f"{user_data['registration_id']}"
-    )
+    print(f"Registration ID: " f"{userdata['registration_id']}")
 
-    print(
-        f"Name:       {user_data['name']}"
-    )
+    print(f"Name:       " f"{userdata['name']}")
 
-    print(
-        f"Email:      {user_data['email']}"
-    )
+    print(f"Email:      " f"{userdata['email']}")
 
-    print(
-        f"Field:      {user_data['field']}"
-    )
+    print(f"Field:      " f"{userdata['field']}")
 
-    print(
-        f"Experience: {user_data['experience']}"
-    )
+    print(f"Experience: " f"{userdata['experience']}")
 
     print("======================================")
 
-    print(
-        "Registration information collected successfully!"
-    )
+    print("Registration information collected successfully!")
 
 
 # ==========================================
 # DISPLAY FOUND REGISTRATION
 # ==========================================
 
-def show_registration(registration):
 
+def show_registration(registration):
     print("\n======================================")
     print("       REGISTRATION FOUND")
     print("======================================")
 
-    print(
-        f"Registration ID: "
-        f"{registration['registration_id']}"
-    )
+    print(f"Registration ID: " f"{registration['registration_id']}")
 
-    print(
-        f"Name:       {registration['name']}"
-    )
+    print(f"Name:       " f"{registration['name']}")
 
-    print(
-        f"Email:      {registration['email']}"
-    )
+    print(f"Email:      " f"{registration['email']}")
 
-    print(
-        f"Field:      {registration['field']}"
-    )
+    print(f"Field:      " f"{registration['field']}")
 
-    print(
-        f"Experience: {registration['experience']}"
-    )
+    print(f"Experience: " f"{registration['experience']}")
 
     print("======================================")
 
@@ -322,120 +266,118 @@ def show_registration(registration):
 # HANDLE CHECK REGISTRATION
 # ==========================================
 
-def handle_check_registration(user_input):
 
-    registration_id = extract_registration_id(
-        user_input
-    )
+def handle_check_registration(user_input):
+    registration_id = extract_registration_id(user_input)
 
     if not registration_id:
-
-        print(
-            "Assistant: Please provide your "
-            "registration ID, for example REG0005."
-        )
-
+        print("Assistant: Please provide your " "registration ID, for example REG0005.")
         return False
 
-    registration = find_registration(
-        registration_id
-    )
+    registration = find_registration(registration_id)
 
     if registration:
-
-        show_registration(
-            registration
-        )
-
+        show_registration(registration)
     else:
-
-        print(
-            f"Assistant: No registration found "
-            f"with ID {registration_id}."
-        )
+        print(f"Assistant: No registration found " f"with ID {registration_id}.")
 
     return True
 
 
 # ==========================================
-# START CHATBOT
+# HELP
+# ==========================================
+
+
+def show_help():
+    print("Assistant: I can help you with the following:\n")
+
+    print("1. Register for an internship")
+    print("2. Check your registration details")
+    print("3. Cancel registration")
+    print("4. Restart registration\n")
+
+    print("Available commands:")
+    print("• I want to register")
+    print("• Show my registration details")
+    print("• Cancel")
+    print("• Restart")
+    print("• Exit")
+
+
+# ==========================================
+# MAIN CHATBOT
 # ==========================================
 
 print("======================================")
 print("     AI REGISTRATION ASSISTANT")
 print("======================================")
 
-print(
-    "Type 'exit' to stop the chatbot.\n"
-)
+print("Type 'help' for available commands.")
 
+print("Type 'exit' to stop the chatbot.\n")
 
-# ==========================================
-# CONVERSATION STATE
-# ==========================================
 
 conversation_state = "start"
 
 
 # ==========================================
-# MAIN CHATBOT LOOP
+# CHATBOT LOOP
 # ==========================================
 
 while True:
 
     user_input = input("You: ").strip()
 
- # ======================================
-    # CANCEL REGISTRATION
+    # ======================================
+    # EMPTY INPUT
+    # ======================================
+
+    if not user_input:
+        print("Assistant: Please enter something.")
+        continue
+
+    # ======================================
+    # GLOBAL HELP COMMAND
+    # ======================================
+
+    if user_input.lower() == "help":
+        show_help()
+        continue
+
+    # ======================================
+    # GLOBAL CANCEL COMMAND
     # ======================================
 
     if user_input.lower() == "cancel":
 
+        reset_userdata()
+
         conversation_state = "start"
 
-        user_data = {
-            "registration_id": "",
-            "name": "",
-            "email": "",
-            "field": "",
-            "experience": ""
-        }
+        print("Assistant: Registration cancelled.")
 
         print(
-            "Assistant: Registration cancelled."
-        )
-
-        print(
-            "Assistant: You can type 'I want to register' anytime to start again."
+            "Assistant: You can type " "'I want to register' anytime " "to start again."
         )
 
         continue
-# ======================================
-# RESTART REGISTRATION
-# ======================================
+
+    # ======================================
+    # GLOBAL RESTART COMMAND
+    # ======================================
 
     if user_input.lower() == "restart":
 
+        reset_userdata()
+
         conversation_state = "name"
 
-        user_data = {
-            "registration_id": "",
-            "name": "",
-            "email": "",
-            "field": "",
-            "experience": ""
-        }
+        print("Assistant: Registration restarted.")
 
-        print(
-            "Assistant: Registration restarted."
-        )
-
-        print(
-            "Assistant: Please provide your full name."
-        )
+        print("Assistant: Please provide " "your full name.")
 
         continue
-
 
     # ======================================
     # EXIT
@@ -445,11 +387,11 @@ while True:
 
         print(
             "Assistant: Thank you for using "
-            "the AI Registration Assistant. Goodbye!"
+            "the AI Registration Assistant. "
+            "Goodbye!"
         )
 
         break
-
 
     # ======================================
     # START STATE
@@ -459,32 +401,27 @@ while True:
 
         intent = predict_intent(user_input)
 
-
         # ==================================
         # CHECK REGISTRATION
         # ==================================
 
         if intent == "check_registration":
 
-            registration_id = extract_registration_id(
-                user_input
-            )
+            registration_id = extract_registration_id(user_input)
 
             if registration_id:
 
-                handle_check_registration(
-                    user_input
-                )
+                handle_check_registration(user_input)
 
             else:
 
                 print(
-                    "Assistant: Please provide your "
-                    "registration ID, for example REG0005."
+                    "Assistant: Please provide "
+                    "your registration ID, "
+                    "for example REG0005."
                 )
 
                 conversation_state = "registration_id"
-
 
         # ==================================
         # REGISTER
@@ -492,18 +429,13 @@ while True:
 
         elif intent == "register":
 
-            print(
-                "Assistant: Great! I'll help you "
-                "register for the internship."
-            )
+            reset_userdata()
 
-            print(
-                "Assistant: Please provide "
-                "your full name."
-            )
+            print("Assistant: Great! I'll help you " "register for the internship.")
+
+            print("Assistant: Please provide " "your full name.")
 
             conversation_state = "name"
-
 
         # ==================================
         # GREETING
@@ -511,63 +443,9 @@ while True:
 
         elif intent == "greeting":
 
-            print(
-                "Assistant: Hello! Welcome to "
-                "the AI Registration Assistant. "
-                "How can I help you?"
-            )
+            print("Assistant: Hello! Welcome to " "the AI Registration Assistant.")
 
-
-        # ==================================
-        # HELP
-        # ==================================
-
-        elif intent == "help":
-
-            print(
-                "Assistant: I can help you with the following:"
-            )
-
-            print(
-                "\n1. Register for an internship"
-            )
-
-            print(
-                "2. Check your registration details"
-            )
-
-            print(
-                "3. Cancel registration"
-            )
-
-            print(
-                "4. Restart registration"
-            )
-
-            print(
-                "\nAvailable commands:"
-            )
-
-            print(
-                "• I want to register"
-            )
-
-            print(
-                "• Show my registration details"
-            )
-
-            print(
-                "• Cancel"
-            )
-
-            print(
-                "• Restart"
-            )
-
-            print(
-                "• Exit"
-            )
-
+            print("Assistant: How can I help you?")
 
         # ==================================
         # THANK YOU
@@ -575,10 +453,15 @@ while True:
 
         elif intent == "thank_you":
 
-            print(
-                "Assistant: You're welcome!"
-            )
+            print("Assistant: You're welcome!")
 
+        # ==================================
+        # HELP INTENT
+        # ==================================
+
+        elif intent == "help":
+
+            show_help()
 
         # ==================================
         # UNKNOWN
@@ -586,12 +469,9 @@ while True:
 
         else:
 
-            print(
-                "Assistant: I'm not sure I "
-                "understood. Could you please "
-                "rephrase your question?"
-            )
+            print("Assistant: I'm not sure I " "understood.")
 
+            print("Assistant: Could you please " "rephrase your question?")
 
     # ======================================
     # REGISTRATION ID STATE
@@ -599,38 +479,29 @@ while True:
 
     elif conversation_state == "registration_id":
 
-        registration_id = extract_registration_id(
-            user_input
-        )
+        registration_id = extract_registration_id(user_input)
 
         if registration_id:
 
-            registration = find_registration(
-                registration_id
-            )
+            registration = find_registration(registration_id)
 
             if registration:
 
-                show_registration(
-                    registration
-                )
+                show_registration(registration)
 
             else:
 
                 print(
-                    f"Assistant: No registration found "
-                    f"with ID {registration_id}."
+                    f"Assistant: No registration "
+                    f"found with ID "
+                    f"{registration_id}."
                 )
 
             conversation_state = "start"
 
         else:
 
-            print(
-                "Assistant: Please enter a valid "
-                "registration ID such as REG0005."
-            )
-
+            print("Assistant: Please enter a valid " "registration ID such as REG0005.")
 
     # ======================================
     # NAME STATE
@@ -638,26 +509,20 @@ while True:
 
     elif conversation_state == "name":
 
-        name = extract_name(
-            user_input
-        )
-
+        name = extract_name(user_input)
 
         if name:
 
-            user_data["name"] = name
-
+            userdata["name"] = name
 
         elif re.fullmatch(
             r"[a-zA-Z ]+",
-            user_input
+            user_input,
         ):
 
             words = user_input.split()
 
-
             invalid_phrases = [
-
                 "i need help",
                 "i need support",
                 "i want to register",
@@ -665,57 +530,34 @@ while True:
                 "hi",
                 "hey",
                 "thanks",
-                "thank you"
+                "thank you",
             ]
-
 
             if user_input.lower() in invalid_phrases:
 
-                print(
-                    "Assistant: Please enter "
-                    "your actual full name."
-                )
+                print("Assistant: Please enter " "your actual full name.")
 
                 continue
-
 
             if len(words) > 4:
 
-                print(
-                    "Assistant: Please enter "
-                    "a valid name."
-                )
+                print("Assistant: Please enter " "a valid name.")
 
                 continue
 
-
-            user_data["name"] = (
-                user_input.strip()
-            )
-
+            userdata["name"] = user_input.strip()
 
         else:
 
-            print(
-                "Assistant: Please enter "
-                "a valid name."
-            )
+            print("Assistant: Please enter " "a valid name.")
 
             continue
 
+        print(f"Assistant: Nice to meet you, " f"{userdata['name']}!")
 
-        print(
-            f"Assistant: Nice to meet you, "
-            f"{user_data['name']}!"
-        )
-
-        print(
-            "Assistant: Please provide "
-            "your email address."
-        )
+        print("Assistant: Please provide " "your email address.")
 
         conversation_state = "email"
-
 
     # ======================================
     # EMAIL STATE
@@ -723,51 +565,31 @@ while True:
 
     elif conversation_state == "email":
 
-        email = extract_email(
-            user_input
-        )
-
+        email = extract_email(user_input)
 
         if email and is_valid_email(email):
 
             if email_exists(email):
 
-                print(
-                    "Assistant: This email is already registered."
-                )
+                print("Assistant: This email is " "already registered.")
 
-                print(
-                    "Assistant: Please use a different email address."
-                )
+                print("Assistant: Please use a " "different email address.")
 
                 continue
 
-            user_data["email"] = email
-            print(
-                f"Assistant: Thank you! Your email "
-                f"{email} has been recorded."
-            )
+            userdata["email"] = email
 
-            print(
-                "Assistant: Now, please tell me "
-                "your field of study."
-            )
+            print(f"Assistant: Thank you! Your " f"email {email} has been recorded.")
+
+            print("Assistant: Now, please tell me " "your field of study.")
 
             conversation_state = "field"
 
-
         else:
 
-            print(
-                "Assistant: That email address "
-                "is not valid."
-            )
+            print("Assistant: That email address " "is not valid.")
 
-            print(
-                "Assistant: Please enter a valid "
-                "email address."
-            )
-
+            print("Assistant: Please enter a valid " "email address.")
 
     # ======================================
     # FIELD STATE
@@ -775,41 +597,24 @@ while True:
 
     elif conversation_state == "field":
 
-        field = extract_field(
-            user_input
-        )
-
+        field = extract_field(user_input)
 
         if not field:
-
             field = user_input.strip()
-
 
         if len(field) < 2:
 
-            print(
-                "Assistant: Please enter your "
-                "field of study."
-            )
+            print("Assistant: Please enter your " "field of study.")
 
             continue
 
+        userdata["field"] = field
 
-        user_data["field"] = field
+        print(f"Assistant: Great! You're studying " f"{field}.")
 
-
-        print(
-            f"Assistant: Great! You're studying "
-            f"{field}."
-        )
-
-        print(
-            "Assistant: Now, tell me about "
-            "your programming experience."
-        )
+        print("Assistant: Now, tell me about " "your programming experience.")
 
         conversation_state = "experience"
-
 
     # ======================================
     # EXPERIENCE STATE
@@ -817,90 +622,60 @@ while True:
 
     elif conversation_state == "experience":
 
-        experience = extract_experience(
-            user_input
-        )
-
+        experience = extract_experience(user_input)
 
         if not experience:
-
             experience = user_input.strip()
-
 
         if len(experience) < 2:
 
-            print(
-                "Assistant: Please describe "
-                "your programming experience."
-            )
+            print("Assistant: Please describe " "your programming experience.")
 
             continue
 
+        userdata["experience"] = experience
 
-        user_data["experience"] = (
-            experience
-        )
+        # ==================================
+        # GENERATE REGISTRATION ID
+        # ==================================
 
+        userdata["registration_id"] = generate_registration_id()
 
-        # Generate registration ID
+        print(f"Assistant: Great! Your experience " f"level is {experience}.")
 
-        user_data["registration_id"] = (
-            generate_registration_id()
-        )
-
-
-        print(
-            f"Assistant: Great! Your experience "
-            f"level is {experience}."
-        )
-
-
-        # Display summary
+        # ==================================
+        # SHOW SUMMARY
+        # ==================================
 
         show_summary()
 
-
-        # Save to SQLite
+        # ==================================
+        # SAVE TO DATABASE
+        # ==================================
 
         try:
 
-            save_to_database(
-                user_data
-            )
+            save_to_database(userdata)
 
-            print(
-                "Assistant: Registration saved "
-                "successfully!"
-            )
+            print("Assistant: Registration saved " "successfully!")
 
         except Exception as error:
 
-            print(
-                "Assistant: Error saving "
-                "registration."
-            )
+            print("Assistant: Error saving " "registration.")
 
-            print(
-                f"Database error: {error}"
-            )
+            print(f"Database error: {error}")
 
             conversation_state = "start"
 
             continue
 
+        print("\nAssistant: Your registration " "information has been collected.")
 
-        print(
-            "\nAssistant: Your registration "
-            "information has been collected."
-        )
+        print("Assistant: Thank you for registering!")
 
-        print(
-            "Assistant: Thank you for registering!"
-        )
-
+        print(f"Assistant: Your registration ID is " f"{userdata['registration_id']}.")
 
         conversation_state = "completed"
-
 
     # ======================================
     # COMPLETED STATE
@@ -908,36 +683,71 @@ while True:
 
     elif conversation_state == "completed":
 
-        intent = predict_intent(
-            user_input
-        )
-
+        intent = predict_intent(user_input)
 
         # ==================================
-        # CHECK REGISTRATION AFTER COMPLETION
+        # REGISTER AGAIN
         # ==================================
 
-        if intent == "check_registration":
+        if intent == "register":
 
-            registration_id = extract_registration_id(
-                user_input
+            reset_userdata()
+
+            conversation_state = "name"
+
+            print(
+                "Assistant: Sure! I'll help you " "register for the internship again."
             )
+
+            print("Assistant: Please provide " "your full name.")
+
+        # ==================================
+        # CHECK REGISTRATION
+        # ==================================
+
+        elif intent == "check_registration":
+
+            registration_id = extract_registration_id(user_input)
 
             if registration_id:
 
-                handle_check_registration(
-                    user_input
-                )
+                handle_check_registration(user_input)
 
             else:
 
                 print(
-                    "Assistant: Please provide your "
-                    "registration ID, for example REG0005."
+                    "Assistant: Please provide "
+                    "your registration ID, "
+                    "for example REG0005."
                 )
 
                 conversation_state = "registration_id"
 
+        # ==================================
+        # GREETING AFTER COMPLETION
+        # ==================================
+
+        elif intent == "greeting":
+
+            print("Assistant: Hello again!")
+
+            print("Assistant: Your registration " "is already complete.")
+
+        # ==================================
+        # THANK YOU AFTER COMPLETION
+        # ==================================
+
+        elif intent == "thank_you":
+
+            print("Assistant: You're welcome!")
+
+        # ==================================
+        # HELP AFTER COMPLETION
+        # ==================================
+
+        elif intent == "help":
+
+            show_help()
 
         # ==================================
         # OTHER INPUT
@@ -945,17 +755,8 @@ while True:
 
         else:
 
-            print(
-                "Assistant: Your registration is "
-                "already complete."
-            )
+            print("Assistant: Your registration " "is already complete.")
 
-            print(
-                "Assistant: You can check your "
-                "registration using your ID."
-            )
+            print("Assistant: You can check your " "registration using your ID.")
 
-            print(
-                "Assistant: Type something like "
-                "'check REG0005' or type 'exit'."
-            )
+            print("Assistant: Type something like " "'check REG0008' or type 'exit'.")
