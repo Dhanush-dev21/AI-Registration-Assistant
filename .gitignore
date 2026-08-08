@@ -2,4 +2,6 @@ venv/
 __pycache__/
 *.pyc
 data/registrations.db
+data/registrations.json
+data/ganesh
 main_old.py
